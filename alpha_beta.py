@@ -23,7 +23,7 @@ def alpha_beta(node, alpha, beta, isMax):
     if isMax:
         for child in node.childNodes:
             # Get max of alpha and the return of the child node
-            alpha = max(alpha, alpha_beta(child, alpha, beta, not maxlevel))
+            alpha = max(alpha, alpha_beta(child, alpha, beta, not isMax))
             print("Node {}: [{}, {}]".format(node.getName(), alpha, beta))
             if alpha >= beta:
                 # Alpha cut - no point in checking the rest
@@ -34,7 +34,7 @@ def alpha_beta(node, alpha, beta, isMax):
     else:
         for child in node.childNodes:
             # Get min of beta and the return of the child node
-            beta = min(beta, alpha_beta(child, alpha, beta, not maxlevel))
+            beta = min(beta, alpha_beta(child, alpha, beta, not isMax))
             print("Node {}: [{}, {}]".format(node.getName(), alpha, beta))
             if alpha >= beta:
                 # Beta cut - no point in checking the rest
