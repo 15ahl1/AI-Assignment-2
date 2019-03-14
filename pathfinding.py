@@ -2,20 +2,39 @@ from queue import PriorityQueue
 import math
 
 def getInput():
-    with open("pathfinding_a.txt") as f:
-        input = f.readlines()
-        input = [x.strip() for x in input]
+    if PHASE == 1:
+        f = open("pathfinding_a.txt", "r")
+    if PHASE == 2:
+        f = open("pathfinding_b.txt", "r")
 
-    x = len(input[0])
-    y = len(input)
+    input = f.readlines()
+    input = [x.strip() for x in input]
 
     outputList = []
-    for i in range(0, y):
-        new = []
-        for j in range(0, x):
-            new.append(input[i][j])
-        outputList.append(new)
+
+    blankLines = [-1]
+    for i in range(0, len(input)):
+        if input[i] == "":
+            blankLines.append(i)
+    blankLines.append(len(input))
+
+    for i in range(0, len(blankLines) - 1):
+        start = blankLines[i] + 1
+        end = blankLines[i + 1]
+
+        rows = end - start
+        cols = len(input[start])
+
+        tempList = []
+        for i in range(start, end):
+            new = []
+            for j in range(0, cols):
+                new.append(input[i][j])
+            tempList.append(new)
+
+        outputList.append(tempList)
     f.close()
+
     return outputList
 
 
@@ -43,10 +62,21 @@ def getOpenSpaces(position, map, cols, rows):
         output.append((y - 1, x))
     if (map[y + 1][x] == '_' or map[y + 1][x] == 'G'):
         output.append((y + 1, x))
+
+    if PHASE == 2:
+        if (map[y + 1][x + 1] == '_' or map[y + 1][x + 1] == 'G'):
+            output.append((y + 1, x + 1))
+        if (map[y + 1][x - 1] == '_' or map[y + 1][x - 1] == 'G'):
+            output.append((y + 1, x - 1))
+        if (map[y - 1][x + 1] == '_' or map[y - 1][x + 1] == 'G'):
+            output.append((y - 1, x + 1))
+        if (map[y - 1][x - 1] == '_' or map[y - 1][x - 1] == 'G'):
+            output.append((y - 1, x - 1))
+
     return output
 
-def printGrid(map):
-    for row in map:
+def printGrid(m):
+    for row in m:
         for e in row:
             print(e, end=''),
         print()
@@ -65,20 +95,18 @@ def greedySearch(map, cols, rows):
     frontier.put((0, start))
     cameFrom[start] = None
     while not frontier.empty():
-        current = frontier.get()
+        current = frontier.get()[1]
         #print("Current: " + str(current[1]) + ", came from: " + str(cameFrom[current[1]]))
-        if current[1] == goal:
+        if current == goal:
             break
-        o = getOpenSpaces(current[1], map, cols, rows)
-        for n in o:
+        for n in getOpenSpaces(current, map, cols, rows):
             #print("Possible Space" + str(n))
             if not(n in cameFrom):
                 priority = euclideanDistance(n, goal)
                 #print("Position: " + str(n) + " has priority: " +str(priority))
                 frontier.put((priority, n))
-                cameFrom[n] = current[1]
-    path = [current[1]]
-    current = current[1]
+                cameFrom[n] = current
+    path = [current]
     while(cameFrom[current] != None):
         current = cameFrom[current]
         path.insert(0, current)
@@ -91,8 +119,8 @@ def cost(a, b):
 def aStarSearch(map, cols, rows):
     start = getStart(map, cols, rows)
     goal = getGoal(map, cols, rows)
-    print("Start: " + str(start))
-    print("Goal: " + str(goal))
+    #print("Start: " + str(start))
+    #print("Goal: " + str(goal))
 
     frontier = PriorityQueue()
     frontier.put((0, start))
@@ -103,18 +131,19 @@ def aStarSearch(map, cols, rows):
 
     while not frontier.empty():
         current = frontier.get()[1] #Pulling the position instead of position and priority
-        print("Current: " + str(current))
+        #print("Current: " + str(current))
         if current == goal:
             break
+
         openSpaces = getOpenSpaces(current, map, cols, rows)
-        print("Open Spaces: " + str(openSpaces))
+        #print("Open Spaces: " + str(openSpaces))
         for n in openSpaces:
-            print("Possible Space: " + str(n))
+            #print("Possible Space: " + str(n))
             newCost = costSoFar[current] + cost(current, n)
             if not(n in costSoFar) or (newCost < costSoFar[n]):
                 costSoFar[n] = newCost
                 priority = newCost + euclideanDistance(n, goal)
-                print("Position: " + str(n) + " has priority: " +str(priority))
+                #print("Position: " + str(n) + " has priority: " +str(priority))
                 frontier.put((priority, n))
                 cameFrom[n] = current
 
@@ -126,7 +155,11 @@ def aStarSearch(map, cols, rows):
 
 
 def outputGrid(map, mode):
-    file = open("pathfinding_a_out.txt", "a")
+    if PHASE == 1:
+        file = open("pathfinding_a_out.txt", "a")
+    if PHASE == 2:
+        file = open("pathfinding_b_out.txt", "a")
+
     if(mode == "Greedy"):
         file.write("Greedy\n")
     elif(mode == "A*"):
@@ -139,37 +172,84 @@ def outputGrid(map, mode):
     file.write("\n")
     file.close()
 
+def copyMap(a):
+    out = [[a[j][i] for i in range(len(a[0]))] for j in range(len(a))]
+    return out
+
+
 def main():
-    #Creates grid from Inputs
-    map = getInput()
-    aStarMap = map.copy() #Copy of the original map
-    greedyMap = map.copy() #Copy of the original map
+    global PHASE
+    PHASE = 1
+    mapInputList = getInput()
+    for mapInput in mapInputList:
+        aStarMap = copyMap(mapInput) #Copy of the original map
+        greedyMap = copyMap(mapInput) #Copy of the original map
 
-    colNum = len(map)    #Number of Columns
-    rowNum = len(map[0]) #Number of Rows
-    start = getStart(map, colNum, rowNum) #Tuple containg Start Position
-    end = getGoal(map, colNum, rowNum) #Tuple containing Goal Position
+        colNum = len(mapInput)    #Number of Columns
+        rowNum = len(mapInput[0]) #Number of Rows
+        start = getStart(mapInput, colNum, rowNum) #Tuple containg Start Position
+        end = getGoal(mapInput, colNum, rowNum) #Tuple containing Goal Position
+        '''
+        print("Original Map")
+        printGrid(mapInput)
+        '''
+        aStarPath = aStarSearch(aStarMap, colNum, rowNum)
+        #print("A* Path: " + str(aStarPath))
+        #Modifying greedyMap to show the path taken by the greedy algorithm
+        for p in aStarPath:
+            if not((aStarMap[p[0]][p[1]] == 'G') or (aStarMap[p[0]][p[1]] == 'S')):
+                aStarMap[p[0]][p[1]] = 'P'
+        #print("A*")
+        #printGrid(aStarMap)
+        outputGrid(aStarMap, "A*")
 
-    printGrid(map)
+        greedyPath = greedySearch(greedyMap, colNum, rowNum)
+        #Modifying greedyMap to show the path taken by the greedy algorithm
+        for p in greedyPath:
+            if not((greedyMap[p[0]][p[1]] == 'G') or (greedyMap[p[0]][p[1]] == 'S')):
+                greedyMap[p[0]][p[1]] = 'P'
+        #print("Greedy")
+        #printGrid(greedyMap)
+        outputGrid(greedyMap, "Greedy")
 
-    aStarPath = aStarSearch(aStarMap, colNum, rowNum)
-    print("A* Path: " + str(aStarPath))
-    #Modifying greedyMap to show the path taken by the greedy algorithm
-    for p in aStarPath:
-        if not((aStarMap[p[0]][p[1]] == 'G') or (aStarMap[p[0]][p[1]] == 'S')):
-            aStarMap[p[0]][p[1]] = 'P'
-    print("A*")
-    printGrid(aStarMap)
-    outputGrid(aStarMap, "A*")
-    printGrid(map)
+    PHASE = 2
 
-    greedyPath = greedySearch(greedyMap, colNum, rowNum)
-    #Modifying greedyMap to show the path taken by the greedy algorithm
-    for p in greedyPath:
-        if not((greedyMap[p[0]][p[1]] == 'G') or (greedyMap[p[0]][p[1]] == 'S')):
-            greedyMap[p[0]][p[1]] = 'P'
-    print("Greedy")
-    printGrid(greedyMap)
-    outputGrid(greedyMap, "Greedy")
+    mapInputList = getInput()
+    for mapInput in mapInputList:
+        #Makes Copies of maps
+
+        aStarMap = copyMap(mapInput) #Copy of the original map
+        greedyMap = copyMap(mapInput) #Copy of the original map
+
+        #Info of maps
+        colNum = len(mapInput)    #Number of Columns
+        rowNum = len(mapInput[0]) #Number of Rows
+        start = getStart(mapInput, colNum, rowNum) #Tuple containg Start Position
+        end = getGoal(mapInput, colNum, rowNum) #Tuple containing Goal Position
+
+        #Prints copy of Original Map
+        print("Original Map")
+        printGrid(mapInput)
+
+        #A* calculation
+        aStarPath = aStarSearch(aStarMap, colNum, rowNum)
+        #print("A* Path: " + str(aStarPath))
+        #Modifying greedyMap to show the path taken by the greedy algorithm
+        for p in aStarPath:
+            if not((aStarMap[p[0]][p[1]] == 'G') or (aStarMap[p[0]][p[1]] == 'S')):
+                aStarMap[p[0]][p[1]] = 'P'
+        print("A*")
+        printGrid(aStarMap)
+        outputGrid(aStarMap, "A*") #Outputing A*
+
+        greedyPath = greedySearch(greedyMap, colNum, rowNum)
+        #Modifying greedyMap to show the path taken by the greedy algorithm
+        for p in greedyPath:
+            if not((greedyMap[p[0]][p[1]] == 'G') or (greedyMap[p[0]][p[1]] == 'S')):
+                greedyMap[p[0]][p[1]] = 'P'
+        print("Greedy")
+        printGrid(greedyMap)
+        outputGrid(greedyMap, "Greedy")
+
 
 main()
