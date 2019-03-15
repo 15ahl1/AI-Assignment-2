@@ -8,8 +8,8 @@ class tree:
 
 	# Initial Values
 	# t: parent
-	def __init__(self,t,value):
-		self.parent = t
+	def __init__(self,parent,value):
+		self.parent = parent
 		self.children = []
 		if type(value) == str: # BRANCH
 			self.label = value
@@ -20,8 +20,8 @@ class tree:
 			self.leaf = True
 			self.value = value
 
-		if t != 0: # connect child to parent
-			t.addChild(self)
+		if parent != 0: # connect child to parent
+			parent.addChild(self)
 
 	def addChild(self,t): # add a child to a parents children
 		self.children.append(t)
@@ -46,62 +46,42 @@ class tree:
 		for i in self.children:
 			i.printTree() # simple print of the tree
 
+# readStruct: reads the structure of a tree from a given txt file
 def readStruct(file):
 	f = open(file,"r")
-	line = f.readline()
-	line = line.split(" ")
-	treeStr = line[1].split("),(")
-	nodes = []
-	parents = {}
+	tL = []
+	for line in f:
+		line = line.split(" ")
+		treeStr = line[1].split("),(")
+		nodes = []
+		parents = {}
 
-	# ROOT
-	rootL = treeStr[0][2:].split(",")
-	label = rootL[0]
-	root = tree(0,rootL[0])
-	parents[label] = root
-	# Second
-	label = rootL[1]
-	second = tree(root,label)
-	parents[label] = second
-
-
-	for i in treeStr[1:-1]:
-		temp = i.split(",")
-		try:
-			parent = parents[temp[0]]
-			value = int(temp[1])
-			node = tree(parent,value)
-		except:
-			parent = parents[temp[0]]
-			node = tree(parent,temp[1])
-			parents[temp[1]] = node
-
-	temp = treeStr[len(treeStr)-1][:-3].split(",")
-	parent = parents[temp[0]]
-	value = int(temp[1])
-	node = tree(parent,value)
-
-	return root
-
-# t = tree(0,"i")
-# q = tree(t,"q")
-# w = tree(t,"w")
-# l = tree(q,"l")
-# k = tree(q,"k")
-# o = tree(w,"o")
-# l1 = tree(l,6)
-# l2 = tree(l,5)
-# l3 = tree(k,1)
-# l4 = tree(k,2)
-# l5 = tree(o,1)
-# l6 = tree(o,3)
-
-t = readStruct("alphabet_small.txt")
-d = readStruct("alphabet_medium.txt")
+		# ROOT
+		rootL = treeStr[0][2:].split(",")
+		label = rootL[0]
+		root = tree(0,rootL[0])
+		parents[label] = root
+		# Second
+		label = rootL[1]
+		second = tree(root,label)
+		parents[label] = second
 
 
+		for i in treeStr[1:-1]:
+			temp = i.split(",")
+			try:
+				parent = parents[temp[0]]
+				value = int(temp[1])
+				node = tree(parent,value)
+			except:
+				parent = parents[temp[0]]
+				node = tree(parent,temp[1])
+				parents[temp[1]] = node
 
-print("Small Tree")
-t.printTree()
-print("Medium Tree")
-d.printTree()
+		temp = treeStr[len(treeStr)-1][:-3].split(",")
+		parent = parents[temp[0]]
+		value = int(temp[1])
+		node = tree(parent,value)
+
+		tL.append(root)
+	return tL
